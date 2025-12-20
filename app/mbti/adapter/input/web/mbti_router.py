@@ -10,11 +10,13 @@ from app.mbti.application.port.input.start_mbti_test_use_case import (
 from app.mbti.application.use_case.start_mbti_test_service import StartMBTITestService
 from app.mbti.application.port.output.mbti_test_session_repository import MBTITestSessionRepositoryPort
 from app.mbti.application.port.output.question_provider_port import QuestionProviderPort
+from app.mbti.adapter.input.web.router_ai_question import router as ai_question_router
 from tests.mbti.fixtures.fake_mbti_test_session_repository import FakeMBTITestSessionRepository
 from tests.mbti.fixtures.fake_question_provider import FakeQuestionProvider
 
 mbti_router = APIRouter()
-
+# AI 질문 엔드포인트도 이 라우터에 합친다
+mbti_router.include_router(ai_question_router)
 
 # --- Dependencies ---
 def get_mbti_test_session_repository() -> MBTITestSessionRepositoryPort:
