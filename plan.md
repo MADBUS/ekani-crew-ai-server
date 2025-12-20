@@ -186,25 +186,32 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Chat Domain (Team Match)
 
-- [ ] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성된다
+- [ ] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
   - **Domain**: `ChatRoom` (id, match_id, created_at)
   - **Domain**: `ChatMessage` (id, room_id, sender_id, content, created_at)
-  - **Repository**: `ChatRoomRepository`
-  - **✅ 인수 조건**: 매칭 시 채팅방 자동 생성
+  - **Repository**: `ChatRoomRepository` - 채팅방 저장/조회
+  - **Repository**: `ChatMessageRepository` - 메시지 저장/조회
+  - **Infrastructure**: `ChatRoomModel`, `ChatMessageModel` (MySQL ORM)
+  - **Infrastructure**: `MySQLChatRoomRepository`, `MySQLChatMessageRepository`
+  - **UseCase**: `CreateChatRoomUseCase` - 채팅방 생성
+  - **UseCase**: `SaveChatMessageUseCase` - 메시지 저장
+  - **✅ 인수 조건**: 매칭 시 채팅방 자동 생성, 메시지 DB 영속화
 
 - [ ] `CHAT-2` [Chat] 사용자로서, 실시간으로 메시지를 주고받고 싶다
   - **Adapter**: WebSocket 핸들러 (FastAPI WebSocket)
+  - **UseCase**: `SendMessageUseCase` - 메시지 전송 및 DB 저장
   - **API**: `WS /chat/{room_id}`
-  - **✅ 인수 조건**: WebSocket 연결, 실시간 메시지 송수신
+  - **✅ 인수 조건**: WebSocket 연결, 실시간 메시지 송수신, 메시지 DB 영속화
 
 - [ ] `CHAT-3` [Chat] 사용자로서, 이전 메시지를 다시 볼 수 있다
-  - **Repository**: `ChatMessageRepository`
+  - **UseCase**: `GetChatHistoryUseCase` - DB에서 메시지 조회
   - **API**: `GET /chat/{room_id}/messages` → 메시지 히스토리
-  - **✅ 인수 조건**: 메시지 영속화, 페이지네이션
+  - **✅ 인수 조건**: DB에서 메시지 조회, 페이지네이션, 시간순 정렬
 
 - [ ] `CHAT-4` [Chat] 사용자로서, 내 채팅방 목록을 보고 싶다
+  - **UseCase**: `GetMyChatRoomsUseCase` - 내 채팅방 목록 조회
   - **API**: `GET /chat/rooms` → 내 채팅방 목록
-  - **✅ 인수 조건**: 최근 메시지 미리보기, 안 읽은 메시지 카운트
+  - **✅ 인수 조건**: DB에서 채팅방 목록 조회, 최근 메시지 미리보기, 안 읽은 메시지 카운트
 
 ---
 
