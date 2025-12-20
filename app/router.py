@@ -11,7 +11,7 @@ from app.consult.infrastructure.model.consult_session_model import ConsultSessio
 from app.consult.adapter.input.web.consult_router import consult_router
 from app.converter.adapter.input.web.converter_router import converter_router
 from app.user.adapter.input.web.user_router import user_router
-
+from app.mbti_test.adapter.input.web import mbti_test_ai_question_router
 
 def setup_routers(app: FastAPI) -> None:
     """모든 라우터를 FastAPI 앱에 등록한다."""
@@ -19,3 +19,4 @@ def setup_routers(app: FastAPI) -> None:
     app.include_router(user_router, prefix="/user")
     app.include_router(converter_router, prefix="/converter")
     app.include_router(consult_router, prefix="/consult")
+    app.include_router(mbti_test_ai_question_router, prefix="/mbti-test")
