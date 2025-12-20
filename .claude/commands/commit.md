@@ -53,4 +53,4 @@ docs: [임익환] Notion 백로그 작성 가이드 업데이트
 - Include BACKLOG-XX reference when applicable
 - Use appropriate type based on the nature of changes
 - Commit in Korean language
-- This project's backlog tag is [AIS-{backlog number}]
+- This project's backlog tag is [{domain}-{backlog number}]
