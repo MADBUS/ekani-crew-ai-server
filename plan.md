@@ -109,9 +109,8 @@ Person C ───→ MATCH-1 → MATCH-2 → MATCH-3
 Person D ───→ CHAT-1 → CHAT-2 → CHAT-3 → CHAT-4
 조장 ───────→ PAY-1 + 병목 지원
 
-[Week 3] 매칭 고도화
-Person A ───→ MATCH-4 (궁합 매칭)
-Person B ───→ MATCH-5 (유사 매칭)
+[Week 3] 테스트 및 안정화
+Person A,B ─→ (여유 - 다른 도메인 지원 가능)
 Person C,D ─→ TEST-1, TEST-2 (통합/부하 테스트)
 조장 ───────→ PAY-2 (결제 API)
 
@@ -151,14 +150,14 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 공통 기반 (하민, 대호 협업)
 
-- [ ] `MBTI-1` [MBTI] 사용자로서, 채팅 형식으로 MBTI 검사를 하고 싶다
+- [x] `MBTI-1` [MBTI] 사용자로서, 채팅 형식으로 MBTI 검사를 하고 싶다
   - **Domain**: `MBTITestSession` (id, user_id, phase='human'|'ai', status, question_index, created_at)
   - **Domain**: `MBTIMessage` (role, content, source='human'|'ai')
   - **Domain**: `MBTIDimensionScore` (e_score, i_score, s_score, n_score, t_score, f_score, j_score, p_score)
   - **API**: `POST /mbti-test/start` → 세션 시작, 사람 질문 1번 반환
   - **✅ 인수 조건**: 세션 생성, 1단계(사람 질문)부터 시작
 
-- [ ] `MBTI-1-1` [MBTI] 시스템으로서, 세션/응답을 DB에 저장하고 싶다
+- [x] `MBTI-1-1` [MBTI] 시스템으로서, 세션/응답을 DB에 저장하고 싶다
   - **Domain**: `MBTIAnswer` (id, session_id, question_id, question_text, answer_text, dimension, weight_applied, created_at)
   - **Repository**: `MBTITestSessionRepository` - 세션 CRUD
   - **Repository**: `MBTIAnswerRepository` - 응답 CRUD
@@ -181,7 +180,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 📋 1단계: 사람이 만든 질문 12개 (하민)
 
-- [ ] `MBTI-2` [MBTI] 사용자로서, 사람이 만든 질문 12개에 답하고 싶다
+- [x] `MBTI-2` [MBTI] 사용자로서, 사람이 만든 질문 12개에 답하고 싶다
   - **Domain**: `HumanQuestion` (id, text, dimension, options, weights)
   - **Domain**: `AnswerKeyword` (id, question_id, keyword, dimension, score)
     - 예: 질문 "우울해서 빵샀어 그러면 뭐라 대답할래?"
@@ -203,7 +202,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 🤖 2단계: AI가 만든 질문 12개 (대호)
 
-- [ ] `MBTI-3` [MBTI] 사용자로서, AI가 만든 적응형 질문 12개에 답하고 싶다
+- [x] `MBTI-3` [MBTI] 사용자로서, AI가 만든 적응형 질문 12개에 답하고 싶다
   - **Input**: 1단계에서 계산된 MBTI 비중 (예: E 60%/I 40%, S 30%/N 70%...)
   - **Adapter**: `AIQuestionProvider` (gpt-4o-mini)
   - **Prompt**: MBTI 비중을 받아 애매한 차원(50:50에 가까운)을 집중 검증하는 질문 생성
@@ -251,16 +250,23 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Matching Domain (Team Match)
 
-- [ ] `MATCH-1` [Matching] 사용자로서, 매칭 대기열에 등록하고 싶다
+- [x] `MATCH-1` [Matching] 사용자로서, 매칭 대기열에 등록하고 싶다
   - **Domain**: `MatchingQueue` (user_id, status, created_at)
   - **API**: `POST /matching/queue` → 대기열 등록
   - **✅ 인수 조건**: 대기열 등록, 중복 등록 방지
 
-- [ ] `MATCH-2` [Matching] 사용자로서, 대기 중인 다른 사용자와 랜덤 매칭되고 싶다
+- [ ] `MATCH-2` [Matching] 사용자로서, MBTI 궁합 기반으로 매칭되고 싶다
   - **Domain**: `Match` (id, user1_id, user2_id, status, created_at)
-  - **UseCase**: `RandomMatchUseCase` - 대기열에서 2명 매칭
-  - **API**: `POST /matching/random` → 매칭 결과 반환
-  - **✅ 인수 조건**: 2명 매칭, 매칭 시 상대 MBTI 표시, 채팅방 생성
+  - **Domain**: `MBTICompatibility` (mbti1, mbti2, score) - DB에 미리 저장된 궁합 테이블
+  - **UseCase**: `SmartMatchUseCase` - 시간 기반 스마트 매칭
+    - 대기 시작 직후: 궁합 점수 높은 사람 우선 매칭
+    - 시간이 지남: 점점 궁합 조건 완화
+    - 일정 시간 초과: 아무 MBTI나 매칭
+  - **API**: `POST /matching/queue` → 대기열 등록 후 자동 매칭
+  - **✅ 인수 조건**:
+    - 처음엔 궁합 좋은 사람 우선 매칭
+    - 대기 시간이 길어지면 조건 완화하여 아무나 매칭
+    - 매칭 시 상대 MBTI 표시, 채팅방 생성
 
 - [ ] `MATCH-3` [Matching] 무료 사용자로서, 하루 3회까지 매칭할 수 있다
   - **Domain 확장**: `User.daily_match_count`, `User.last_match_date`
@@ -270,7 +276,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Chat Domain (Team Match)
 
-- [-] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
+- [x] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
   - **Domain**: `ChatRoom` (id, match_id, created_at)
   - **Domain**: `ChatMessage` (id, room_id, sender_id, content, created_at)
   - **Repository**: `ChatRoomRepository` - 채팅방 저장/조회
@@ -296,25 +302,6 @@ Person C,D ─→ 버그 픽스, UX 개선
   - **UseCase**: `GetMyChatRoomsUseCase` - 내 채팅방 목록 조회
   - **API**: `GET /chat/rooms` → 내 채팅방 목록
   - **✅ 인수 조건**: DB에서 채팅방 목록 조회, 최근 메시지 미리보기, 안 읽은 메시지 카운트
-
----
-
-### Week 3: 매칭 고도화
-
-> **목표**: MBTI 기반 매칭 알고리즘으로 매칭 품질 개선
-
-#### MBTI 기반 매칭 알고리즘 (Team MBTI)
-
-- [ ] `MATCH-4` [Matching] 사용자로서, MBTI 궁합이 좋은 사람과 매칭되고 싶다
-  - **Domain**: `MBTICompatibility` - 궁합 점수 계산
-  - **UseCase**: `CompatibilityMatchUseCase` - 궁합 기반 매칭
-  - **API**: `POST /matching/compatibility` → MBTI 궁합 매칭
-  - **✅ 인수 조건**: 궁합 점수 높은 순 매칭
-
-- [ ] `MATCH-5` [Matching] 사용자로서, 나와 비슷한 MBTI 사람과 매칭되고 싶다
-  - **UseCase**: `SimilarMBTIMatchUseCase`
-  - **API**: `POST /matching/similar` → 유사 MBTI 매칭
-  - **✅ 인수 조건**: 같은/유사 MBTI 우선 매칭
 
 ---
 
