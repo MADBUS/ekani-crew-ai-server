@@ -52,14 +52,7 @@ class MySQLUserRepository(UserRepositoryPort):
         - 실패해도 no-op 허용이므로 None 반환.
         """
         candidates = [
-            ("app.user.infrastructure.model.user_models", "UserModel"),
-            ("app.user.infrastructure.model.models", "UserModel"),
-            ("app.user.infrastructure.model.user_models", "User"),
-            ("app.user.infrastructure.model.models", "User"),
-            ("app.users.infrastructure.model.user_models", "UserModel"),
-            ("app.users.infrastructure.model.models", "UserModel"),
-            ("app.users.infrastructure.model.user_models", "User"),
-            ("app.users.infrastructure.model.models", "User"),
+            ("app.user.infrastructure.model.user_model", "UserModel"),
         ]
 
         for module_path, attr in candidates:
