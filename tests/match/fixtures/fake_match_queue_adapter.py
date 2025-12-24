@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 from collections import deque
 
 from app.shared.vo.mbti import MBTI
@@ -44,3 +44,16 @@ class FakeMatchQueueAdapter(MatchQueuePort):
 
     async def get_queue_size(self, mbti: MBTI) -> int:
         return len(self._queues.get(mbti.value, []))
+
+    async def get_sorted_targets_by_size(self, mbti_list: List[str]) -> List[Tuple[str, int]]:
+        """
+        테스트용: 메모리 큐의 사이즈를 확인하고 정렬하여 반환
+        """
+        result = []
+        for mbti_str in mbti_list:
+            size = len(self._queues.get(mbti_str, []))
+            result.append((mbti_str, size))
+
+        # 사이즈 내림차순 정렬
+        result.sort(key=lambda x: x[1], reverse=True)
+        return result
