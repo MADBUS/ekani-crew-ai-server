@@ -191,18 +191,18 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Matching Domain (Team Match)
 
-- [ ] `MATCH-1` [Matching] 사용자로서, 매칭 대기열에 등록하고 싶다
+- [x] `MATCH-1` [Matching] 사용자로서, 매칭 대기열에 등록하고 싶다
   - **Domain**: `MatchingQueue` (user_id, status, created_at)
   - **API**: `POST /matching/queue` → 대기열 등록
   - **✅ 인수 조건**: 대기열 등록, 중복 등록 방지
 
-- [ ] `MATCH-2` [Matching] 사용자로서, 대기 중인 다른 사용자와 랜덤 매칭되고 싶다
+- [x] `MATCH-2` [Matching] 사용자로서, 대기 중인 다른 사용자와 랜덤 매칭되고 싶다
   - **Domain**: `Match` (id, user1_id, user2_id, status, created_at)
   - **UseCase**: `RandomMatchUseCase` - 대기열에서 2명 매칭
   - **API**: `POST /matching/random` → 매칭 결과 반환
   - **✅ 인수 조건**: 2명 매칭, 매칭 시 상대 MBTI 표시, 채팅방 생성
 
-- [ ] `MATCH-3` [Matching] 무료 사용자로서, 하루 3회까지 매칭할 수 있다
+- [x] `MATCH-3` [Matching] 무료 사용자로서, 하루 3회까지 매칭할 수 있다
   - **Domain 확장**: `User.daily_match_count`, `User.last_match_date`
   - **UseCase 확장**: 매칭 전 횟수 체크
   - **API 확장**: 잔여 횟수 반환, 초과 시 402 에러
