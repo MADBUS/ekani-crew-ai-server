@@ -11,7 +11,7 @@ from app.mbti_test.application.port.output.mbti_test_session_repository import (
 )
 from app.mbti_test.domain.mbti_result import MBTIResult, MBTITestSessionExtended, SessionStatus
 from app.mbti_test.domain.mbti_test_session import MBTITestSession
-from app.mbti_test.infrastructure.model.mbti_test_models import MBTITestSessionModel
+from app.mbti_test.infrastructure.mbti_test_models import MBTITestSessionModel
 
 
 class MySQLMBTITestSessionRepository(MBTITestSessionRepositoryPort):

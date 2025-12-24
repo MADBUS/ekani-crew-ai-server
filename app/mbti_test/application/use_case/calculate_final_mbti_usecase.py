@@ -20,7 +20,7 @@ DIM_SIDES: dict[str, tuple[str, str]] = {
 
 class CalculateFinalMBTIUseCase:
     """
-    MBTI-4: 24개 답변 누적 세션을 기반으로 최종 MBTI 결과를 계산하고 저장한다.
+    MBTI-4: 12개 답변 누적 세션을 기반으로 최종 MBTI 결과를 계산하고 저장한다.
     - DB/ORM을 모르기 위해 Port(Repository 인터페이스)에만 의존한다.
     """
 
@@ -28,7 +28,7 @@ class CalculateFinalMBTIUseCase:
         self,
         session_repo: MBTITestSessionRepositoryPort,
         user_repo: UserRepositoryPort,
-        required_answers: int = 24,
+        required_answers: int = 12,
     ) -> None:
         self._session_repo = session_repo
         self._user_repo = user_repo
