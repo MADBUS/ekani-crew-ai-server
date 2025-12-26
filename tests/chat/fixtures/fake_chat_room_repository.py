@@ -19,3 +19,11 @@ class FakeChatRoomRepository(ChatRoomRepositoryPort):
             room for room in self._rooms.values()
             if room.user1_id == user_id or room.user2_id == user_id
         ]
+
+    def find_by_users(self, user1_id: str, user2_id: str) -> ChatRoom | None:
+        """두 사용자 간의 채팅방을 조회한다 (순서 무관)"""
+        for room in self._rooms.values():
+            if (room.user1_id == user1_id and room.user2_id == user2_id) or \
+               (room.user1_id == user2_id and room.user2_id == user1_id):
+                return room
+        return None

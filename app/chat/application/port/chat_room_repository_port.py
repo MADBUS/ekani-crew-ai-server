@@ -20,3 +20,8 @@ class ChatRoomRepositoryPort(ABC):
     def find_by_user_id(self, user_id: str) -> list[ChatRoom]:
         """user_id로 해당 사용자가 참여한 채팅방 목록을 조회한다"""
         pass
+
+    @abstractmethod
+    def find_by_users(self, user1_id: str, user2_id: str) -> ChatRoom | None:
+        """두 사용자 간의 채팅방을 조회한다 (순서 무관)"""
+        pass
