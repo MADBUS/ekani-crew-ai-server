@@ -8,11 +8,21 @@ from app.mbti_test.application.port.input.answer_question_use_case import (
 )
 from app.mbti_test.application.port.output.mbti_test_session_repository import MBTITestSessionRepositoryPort
 from app.mbti_test.application.port.ai_question_provider_port import AIQuestionProviderPort
-from app.mbti_test.domain.analyzer import run_analysis, calculate_partial_mbti
+from app.mbti_test.domain.analyzer import (
+    run_analysis,
+    calculate_partial_mbti,
+    analyze_single_answer,
+    get_dimension_for_question,
+)
 from app.mbti_test.infrastructure.service.human_question_provider import HumanQuestionProvider
 from app.mbti_test.domain.mbti_message import MBTIMessage, MessageRole, MessageSource
-from app.mbti_test.domain.mbti_test_session import TestStatus
-from app.mbti_test.domain.models import GenerateAIQuestionCommand, ChatMessage, MessageRole as ModelMessageRole
+from app.mbti_test.domain.mbti_test_session import TestStatus, Turn
+from app.mbti_test.domain.models import (
+    GenerateAIQuestionCommand,
+    AnalyzeAnswerCommand,
+    ChatMessage,
+    MessageRole as ModelMessageRole,
+)
 
 
 HUMAN_QUESTION_COUNT = 12
@@ -46,9 +56,9 @@ class AnswerQuestionService(AnswerQuestionUseCase):
                 0, session.selected_human_questions
             )
 
-            # 질문 히스토리에 저장
+            # pending_question에 저장 (다음 답변 시 Turn으로 저장됨)
             if first_question:
-                session.questions.append(first_question.content)
+                session.pending_question = first_question.content
 
             self._session_repository.save(session)
 
@@ -59,8 +69,42 @@ class AnswerQuestionService(AnswerQuestionUseCase):
                 is_completed=False,
             )
 
-        # 3. 정상 답변 처리 - 답변 저장 및 인덱스 증가
-        session.answers.append({"content": command.answer})
+        # 3. 정상 답변 처리 - Turn 생성 및 저장
+        current_index = session.current_question_index
+
+        # 답변 분석: Human(0-11) vs AI(12-23)
+        if current_index < HUMAN_QUESTION_COUNT:
+            # Human phase: 키워드 기반 분석
+            dimension = get_dimension_for_question(current_index)
+            analysis = analyze_single_answer(command.answer, dimension)
+            scores = analysis["scores"]
+            side = analysis["side"]
+            score = analysis["score"]
+        else:
+            # AI phase: AI 기반 분석 (맥락 포함)
+            history = self._build_chat_history(session)
+            analyze_command = AnalyzeAnswerCommand(
+                question=session.pending_question or "",
+                answer=command.answer,
+                history=history,
+            )
+            ai_analysis = self._ai_question_provider.analyze_answer(analyze_command)
+            dimension = ai_analysis.dimension
+            scores = ai_analysis.scores
+            side = ai_analysis.side
+            score = ai_analysis.score
+
+        # Turn 생성
+        turn = Turn(
+            turn_number=current_index + 1,  # 1-based
+            question=session.pending_question or "",
+            answer=command.answer,
+            dimension=dimension,
+            scores=scores,
+            side=side,
+            score=score,
+        )
+        session.turns.append(turn)
         session.current_question_index += 1
 
         current_index = session.current_question_index
@@ -69,7 +113,7 @@ class AnswerQuestionService(AnswerQuestionUseCase):
 
         # 4. 사람 질문(12개) 완료 시 분석 실행
         if current_index == HUMAN_QUESTION_COUNT:
-            answers = [ans["content"] for ans in session.answers]
+            answers = [t.answer for t in session.turns]
             mbti, scores, confidence = run_analysis(answers)
 
             analysis_result = {
@@ -78,17 +122,17 @@ class AnswerQuestionService(AnswerQuestionUseCase):
                 "confidence": confidence,
             }
             session.human_test_result = analysis_result
-        
+
         # 5. 매 질문마다 부분 MBTI 분석
-        if current_index <= HUMAN_QUESTION_COUNT: # Only for human-led questions
-            current_answers = [ans["content"] for ans in session.answers]
+        if current_index <= HUMAN_QUESTION_COUNT:
+            current_answers = [t.answer for t in session.turns]
             partial_analysis_result = calculate_partial_mbti(current_answers)
             print(f"Partial MBTI Analysis for question {current_index}: {partial_analysis_result}")
-
 
         # 6. 전체 완료 체크
         if current_index >= TOTAL_QUESTION_COUNT:
             session.status = TestStatus.COMPLETED
+            session.pending_question = None
             self._session_repository.save(session)
             return AnswerQuestionResponse(
                 question_number=current_index,
@@ -133,9 +177,9 @@ class AnswerQuestionService(AnswerQuestionUseCase):
                     source=MessageSource.AI,
                 )
 
-        # 8. 질문 히스토리에 저장
+        # 8. pending_question에 저장 (다음 답변 시 Turn으로 저장됨)
         if next_question:
-            session.questions.append(next_question.content)
+            session.pending_question = next_question.content
 
         self._session_repository.save(session)
 
@@ -152,16 +196,15 @@ class AnswerQuestionService(AnswerQuestionUseCase):
         """Build chat history from session for AI context"""
         history = []
 
-        # Interleave questions and answers
-        for i, question in enumerate(session.questions):
+        # Build from turns
+        for turn in session.turns:
             history.append(ChatMessage(
                 role=ModelMessageRole.ASSISTANT,
-                content=question,
+                content=turn.question,
             ))
-            if i < len(session.answers):
-                history.append(ChatMessage(
-                    role=ModelMessageRole.USER,
-                    content=session.answers[i].get("content", ""),
-                ))
+            history.append(ChatMessage(
+                role=ModelMessageRole.USER,
+                content=turn.answer,
+            ))
 
         return history

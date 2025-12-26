@@ -42,3 +42,21 @@ class GenerateAIQuestionCommand:
     turn: int
     history: List[ChatMessage]
     question_mode: Literal["normal", "surprise"] = "normal"
+
+
+@dataclass(frozen=True)
+class AnalyzeAnswerCommand:
+    """AI 답변 분석을 위한 커맨드"""
+    question: str  # 질문 내용
+    answer: str  # 유저 답변
+    history: List[ChatMessage]  # 이전 대화 맥락
+
+
+@dataclass(frozen=True)
+class AnalyzeAnswerResponse:
+    """AI 답변 분석 결과"""
+    dimension: str  # "EI", "SN", "TF", "JP"
+    scores: dict  # {"E": 5, "I": 3} 등
+    side: str  # 우세한 쪽 ("E", "I", "S", "N", "T", "F", "J", "P")
+    score: int  # 우세한 쪽 점수
+    reasoning: str  # AI의 분석 이유 (선택적)

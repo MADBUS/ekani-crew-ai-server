@@ -34,7 +34,6 @@ class StartMBTITestService(StartMBTITestUseCase):
             test_type=command.test_type,
             status=TestStatus.IN_PROGRESS,
             created_at=datetime.now(),
-            questions=[],  # 질문 히스토리 (greeting은 포함 안 함)
             selected_human_questions=selected_questions,  # 랜덤 선택된 12개 질문
             greeting_completed=False,  # 아직 인사 응답 안 받음
         )

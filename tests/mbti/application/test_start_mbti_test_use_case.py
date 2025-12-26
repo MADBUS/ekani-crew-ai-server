@@ -15,7 +15,7 @@ def test_start_mbti_test_should_create_session_and_return_first_question():
     question_provider = FakeQuestionProvider()
     service = StartMBTITestService(
         mbti_test_session_repository=repository,
-        question_provider=question_provider,
+        human_question_provider=question_provider,
     )
     command = StartMBTITestCommand(user_id=user_id, test_type=TestType.AI)
 

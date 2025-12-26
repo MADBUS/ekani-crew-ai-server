@@ -24,10 +24,6 @@ from app.mbti_test.application.port.output.user_repository_port import UserRepos
 
 mbti_router = APIRouter()
 
-# 기존 /ai-question 라우터 포함
-from app.mbti_test.adapter.input.web.router_ai_question import router as ai_question_router
-mbti_router.include_router(ai_question_router)
-
 # DI (현재는 인메모리, 필요 시 MySQL Repo로 교체)
 _session_repository = InMemoryMBTITestSessionRepository()
 
@@ -55,8 +51,8 @@ def get_calculate_final_mbti_usecase_inmemory() -> CalculateFinalMBTIUseCase:
         required_answers=12,  # 필요 시 24 → 12로 변경한 값 유지
     )
 
-# ... /start, /answer는 동일하게 _session_repository 사용 ...
-class AnswerRequest(BaseModel):
+# ... /start, /chat은 동일하게 _session_repository 사용 ...
+class ChatRequest(BaseModel):
     content: str
 
 class MBTIResultResponse(BaseModel):
@@ -75,10 +71,10 @@ async def start_mbti_test(
     result = use_case.execute(command)
     return jsonable_encoder({"session": result.session, "first_question": result.first_question})
 
-@mbti_router.post("/{test_session_id}/answer")
-async def answer_question(
+@mbti_router.post("/{test_session_id}/chat")
+async def chat(
     test_session_id: str,
-    request: AnswerRequest,
+    request: ChatRequest,
     user_id: str = Depends(get_current_user_id),
     session_repository: MBTITestSessionRepositoryPort = Depends(get_session_repository),
     human_question_provider: HumanQuestionProvider = Depends(get_human_question_provider),
