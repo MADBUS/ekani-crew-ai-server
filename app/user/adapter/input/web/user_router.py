@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.auth.adapter.input.web.auth_dependency import get_current_user_id
 from app.user.application.port.user_repository_port import UserRepositoryPort
@@ -7,13 +8,13 @@ from app.user.domain.user import User
 from app.shared.vo.mbti import MBTI
 from app.shared.vo.gender import Gender
 from app.user.infrastructure.repository.mysql_user_repository import MySQLUserRepository
-from config.database import get_db_session
+from config.database import get_db
 
 user_router = APIRouter()
 
 
-def get_user_repository() -> UserRepositoryPort:
-    return MySQLUserRepository(get_db_session())
+def get_user_repository(db: Session = Depends(get_db)) -> UserRepositoryPort:
+    return MySQLUserRepository(db)
 
 
 class UpdateProfileRequest(BaseModel):

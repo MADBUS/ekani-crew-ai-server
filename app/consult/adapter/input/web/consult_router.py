@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.consult.application.use_case.start_consult_use_case import StartConsultUseCase
 from app.consult.application.use_case.send_message_use_case import SendMessageUseCase
@@ -12,18 +13,18 @@ from app.consult.domain.message import Message
 from app.user.infrastructure.repository.mysql_user_repository import MySQLUserRepository
 from app.consult.infrastructure.repository.mysql_consult_repository import MySQLConsultRepository
 from app.consult.infrastructure.service.openai_counselor_adapter import OpenAICounselorAdapter
-from config.database import get_db_session
+from config.database import get_db
 from config.settings import get_settings
 
 consult_router = APIRouter()
 
 
-def get_user_repository() -> UserRepositoryPort:
-    return MySQLUserRepository(get_db_session())
+def get_user_repository(db: Session = Depends(get_db)) -> UserRepositoryPort:
+    return MySQLUserRepository(db)
 
 
-def get_consult_repository() -> ConsultRepositoryPort:
-    return MySQLConsultRepository(get_db_session())
+def get_consult_repository(db: Session = Depends(get_db)) -> ConsultRepositoryPort:
+    return MySQLConsultRepository(db)
 
 
 def get_ai_counselor() -> AICounselorPort:

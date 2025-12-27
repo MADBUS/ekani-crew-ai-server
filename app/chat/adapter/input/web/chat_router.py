@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from sqlalchemy.orm import Session
 
 from app.chat.application.use_case.get_chat_history_use_case import GetChatHistoryUseCase
 from app.chat.application.use_case.get_my_chat_rooms_use_case import GetMyChatRoomsUseCase
@@ -9,19 +10,19 @@ from app.chat.application.port.chat_message_repository_port import ChatMessageRe
 from app.chat.application.port.chat_room_repository_port import ChatRoomRepositoryPort
 from app.chat.infrastructure.repository.mysql_chat_message_repository import MySQLChatMessageRepository
 from app.chat.infrastructure.repository.mysql_chat_room_repository import MySQLChatRoomRepository
-from config.database import get_db_session
+from config.database import get_db
 
 chat_router = APIRouter()
 
 
-def get_chat_message_repository() -> ChatMessageRepositoryPort:
+def get_chat_message_repository(db: Session = Depends(get_db)) -> ChatMessageRepositoryPort:
     """ChatMessage Repository 의존성 주입"""
-    return MySQLChatMessageRepository(get_db_session())
+    return MySQLChatMessageRepository(db)
 
 
-def get_chat_room_repository() -> ChatRoomRepositoryPort:
+def get_chat_room_repository(db: Session = Depends(get_db)) -> ChatRoomRepositoryPort:
     """ChatRoom Repository 의존성 주입"""
-    return MySQLChatRoomRepository(get_db_session())
+    return MySQLChatRoomRepository(db)
 
 
 class ChatMessageResponse(BaseModel):
