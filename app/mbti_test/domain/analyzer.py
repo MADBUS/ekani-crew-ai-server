@@ -435,3 +435,63 @@ def run_analysis(answers: list):
     }
 
     return res_mbti, scores, confidence
+
+
+def get_dimension_for_question(question_index: int) -> str:
+    """질문 인덱스에 따라 MBTI 차원을 반환합니다."""
+    if question_index < 3:
+        return "EI"
+    elif question_index < 6:
+        return "SN"
+    elif question_index < 9:
+        return "TF"
+    elif question_index < 12:
+        return "JP"
+    return ""
+
+def analyze_single_answer(answer: str, dimension: str) -> dict:
+    """단일 답변을 분석하여 점수, 경향, 점수를 반환합니다."""
+    scores = {k: 0 for k in dimension}
+    keyword_matched = False
+
+    if dimension in DICTIONARY:
+        for trait, keywords in DICTIONARY[dimension].items():
+            for k in keywords:
+                if k["word"] in answer:
+                    scores[trait] += k["w"]
+                    keyword_matched = True
+    
+    # 특수 정규식 규칙 적용
+    if dimension == "SN":
+        if re.search(r"만약에|~라면|어쩌면|언젠가|미래에|가능성|상상", answer):
+            scores["N"] += 3
+            keyword_matched = True
+        if re.search(r"실제로|경험상|직접|해봤|본 적|현실적으로", answer):
+            scores["S"] += 3
+            keyword_matched = True
+
+    if dimension == "TF":
+        if re.search(r"왜 그런지|이유가 뭐야|논리적|합리적|따져보면", answer):
+            scores["T"] += 4
+            keyword_matched = True
+        if re.search(r"기분이|마음이|감정적|공감|위로|속상|서운", answer):
+            scores["F"] += 4
+            keyword_matched = True
+
+    if dimension == "JP":
+        if re.search(r"계획|미리|스케줄|예약|정해|체크리스트", answer):
+            scores["J"] += 3
+            keyword_matched = True
+        if re.search(r"즉흥|일단|상황 봐서|그때 가서|나중에|대충", answer):
+            scores["P"] += 3
+            keyword_matched = True
+
+    if not keyword_matched:
+        apply_style_correction(answer, dimension, scores)
+
+    # side와 score 결정
+    trait1, trait2 = tuple(dimension)
+    side = trait1 if scores.get(trait1, 0) >= scores.get(trait2, 0) else trait2
+    score = scores.get(side, 0)
+    
+    return {"scores": scores, "side": side, "score": score}
