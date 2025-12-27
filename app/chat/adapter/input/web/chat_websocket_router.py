@@ -14,19 +14,20 @@ chat_websocket_router = APIRouter()
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     await manager.connect(websocket, room_id)
 
-    # 의존성 주입
+    # 채팅방 존재 여부 확인 (세션 열고 바로 닫음)
     db_session = get_db_session()
-    message_repository = MySQLChatMessageRepository(db_session)
-    room_repository = MySQLChatRoomRepository(db_session)
-    save_message_use_case = SaveChatMessageUseCase(message_repository)
-
-    # 채팅방 존재 여부 확인
-    chat_room = room_repository.find_by_id(room_id)
-    if not chat_room:
-        await websocket.send_json({"error": "채팅방을 찾을 수 없습니다"})
-        await websocket.close()
+    try:
+        room_repository = MySQLChatRoomRepository(db_session)
+        chat_room = room_repository.find_by_id(room_id)
+        if not chat_room:
+            await websocket.send_json({"error": "채팅방을 찾을 수 없습니다"})
+            await websocket.close()
+            return
+        # 채팅방 참여자 정보 저장 (세션 닫기 전에)
+        user1_id = chat_room.user1_id
+        user2_id = chat_room.user2_id
+    finally:
         db_session.close()
-        return
 
     try:
         while True:
@@ -42,20 +43,26 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 continue
 
             # sender_id가 채팅방 참여자인지 확인
-            if sender_id not in [chat_room.user1_id, chat_room.user2_id]:
+            if sender_id not in [user1_id, user2_id]:
                 await websocket.send_json({"error": "이 채팅방의 참여자가 아닙니다"})
                 continue
 
             # 메시지 ID 생성
             message_id = str(uuid.uuid4())
 
-            # DB에 메시지 저장
-            save_message_use_case.execute(
-                message_id=message_id,
-                room_id=room_id,
-                sender_id=sender_id,
-                content=content
-            )
+            # DB에 메시지 저장 (메시지마다 세션 열고 닫음)
+            db_session = get_db_session()
+            try:
+                message_repository = MySQLChatMessageRepository(db_session)
+                save_message_use_case = SaveChatMessageUseCase(message_repository)
+                save_message_use_case.execute(
+                    message_id=message_id,
+                    room_id=room_id,
+                    sender_id=sender_id,
+                    content=content
+                )
+            finally:
+                db_session.close()
 
             # 브로드캐스트용 메시지 생성
             broadcast_message = {
@@ -70,6 +77,4 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_id)
-    finally:
-        db_session.close()
 
