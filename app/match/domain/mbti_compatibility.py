@@ -35,26 +35,31 @@ class MBTICompatibility:
 
     @classmethod
     def get_targets(cls, my_mbti: str, level: int = 1) -> List[MBTI]:
+        all_mbtis = set(cls.ALL_MBTI)
+        best_matches = set(cls._BEST_MATCH.get(my_mbti, []))
+        bad_and_avg_matches = cls._get_bad_and_average(my_mbti)
+
+        # Level 2 (좋은 관계)는 전체에서 최악, 무난, 천생연분을 제외한 나머지
+        good_matches = all_mbtis - best_matches - bad_and_avg_matches
+        
+        # Level 3 (무난한 관계)
+        average_matches = cls._get_average_only(my_mbti)
+
         target_set: Set[str] = set()
-
-        # Level 1: 천생연분
-        if level >= 1:
-            target_set.update(cls._BEST_MATCH.get(my_mbti, []))
-
-        # Level 2: 좋은 관계 (전체 - (천생연분 + 무난 + 최악))
-        if level >= 2:
-            all_others = set(cls.ALL_MBTI)
-            bad_and_avg = cls._get_bad_and_average(my_mbti)
-            best = set(cls._BEST_MATCH.get(my_mbti, []))
-            target_set.update(all_others - bad_and_avg - best)
-
-        # Level 3: 무난한 관계
-        if level >= 3:
-            target_set.update(cls._get_average_only(my_mbti))
-
-        # Level 4: 전체 (최악 포함)
-        if level >= 4:
-            return [MBTI(m) for m in cls.ALL_MBTI]
+        if level == 1:
+            target_set.update(best_matches)
+        elif level == 2:
+            target_set.update(best_matches)
+            target_set.update(good_matches)
+        elif level == 3:
+            target_set.update(best_matches)
+            target_set.update(good_matches)
+            target_set.update(average_matches)
+        elif level >= 4:
+            target_set.update(all_mbtis)
+            
+        # 자기 자신은 매칭 대상에서 제외
+        target_set.discard(my_mbti)
 
         return [MBTI(m) for m in list(target_set)]
 
