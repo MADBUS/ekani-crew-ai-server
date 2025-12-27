@@ -71,9 +71,9 @@ async def start_mbti_test(
     result = use_case.execute(command)
     return jsonable_encoder({"session": result.session, "first_question": result.first_question})
 
-@mbti_router.post("/{session_id}/answer")
+@mbti_router.post("/{mbti_session_id}/answer")
 async def answer_question(
-    session_id: str,
+    mbti_session_id: str,
     request: ChatRequest,
     user_id: str = Depends(get_current_user_id),
     session_repository: MBTITestSessionRepositoryPort = Depends(get_session_repository),
@@ -86,7 +86,7 @@ async def answer_question(
         ai_question_provider=ai_question_provider,
     )
     try:
-        command = AnswerQuestionCommand(session_id=session_id, answer=request.content)
+        command = AnswerQuestionCommand(session_id=mbti_session_id, answer=request.content)
         result = use_case.execute(command)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -101,9 +101,9 @@ async def answer_question(
     })
 
 
-@mbti_router.post("/{session_id}/chat")
+@mbti_router.post("/{mbti_session_id}/chat")
 async def answer_question_chat(
-    session_id: str,
+    mbti_session_id: str,
     request: ChatRequest,
     user_id: str = Depends(get_current_user_id),
     session_repository: MBTITestSessionRepositoryPort = Depends(get_session_repository),
@@ -116,7 +116,7 @@ async def answer_question_chat(
         ai_question_provider=ai_question_provider,
     )
     try:
-        command = AnswerQuestionCommand(session_id=session_id, answer=request.content)
+        command = AnswerQuestionCommand(session_id=mbti_session_id, answer=request.content)
         result = use_case.execute(command)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -131,13 +131,13 @@ async def answer_question_chat(
     })
 
 
-@mbti_router.get("/result/{session_id}", response_model=MBTIResultResponse)
+@mbti_router.get("/result/{mbti_session_id}", response_model=MBTIResultResponse)
 def get_result(
-    session_id: uuid.UUID,
+    mbti_session_id: uuid.UUID,
     use_case: CalculateFinalMBTIUseCase = Depends(get_calculate_final_mbti_usecase_inmemory),  # ⬅️ 인메모리 DI로 교체
 ):
     try:
-        result = use_case.execute(session_id=session_id)
+        result = use_case.execute(session_id=mbti_session_id)
         return MBTIResultResponse(
             mbti=result.mbti,
             dimension_scores=result.dimension_scores,
