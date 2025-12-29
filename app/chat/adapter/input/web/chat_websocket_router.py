@@ -1,7 +1,7 @@
 import json
 import uuid
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from .connection_manager import manager
+from config.connection_manager import manager
 from app.chat.application.use_case.save_chat_message_use_case import SaveChatMessageUseCase
 from app.chat.infrastructure.repository.mysql_chat_message_repository import MySQLChatMessageRepository
 from app.chat.infrastructure.repository.mysql_chat_room_repository import MySQLChatRoomRepository
