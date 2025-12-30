@@ -26,11 +26,22 @@ class GetMyChatRoomsUseCase:
             # 최신 메시지 찾기 (마지막 메시지)
             latest_message = messages[-1] if messages else None
 
-            # 읽지 않은 메시지 수 계산 (상대방이 보낸 메시지)
-            unread_count = sum(
-                1 for msg in messages
-                if msg.sender_id != user_id
-            )
+            # 마지막 읽은 시간 가져오기
+            last_read_at = room.get_last_read_at(user_id)
+
+            # 읽지 않은 메시지 수 계산 (마지막 읽은 시간 이후 상대방이 보낸 메시지)
+            if last_read_at is None:
+                # 한 번도 읽지 않은 경우: 모든 상대방 메시지
+                unread_count = sum(
+                    1 for msg in messages
+                    if msg.sender_id != user_id
+                )
+            else:
+                # 마지막 읽은 시간 이후의 상대방 메시지만
+                unread_count = sum(
+                    1 for msg in messages
+                    if msg.sender_id != user_id and msg.created_at > last_read_at
+                )
 
             room_preview = ChatRoomWithPreviewDTO(
                 id=room.id,

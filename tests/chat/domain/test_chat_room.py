@@ -74,3 +74,77 @@ def test_chat_room_auto_generates_created_at_if_not_provided():
 
     # Then: created_at이 자동으로 설정된다
     assert isinstance(room.created_at, datetime)
+
+
+def test_mark_read_by_user1_updates_user1_last_read_at():
+    """user1이 읽음 처리하면 user1_last_read_at이 업데이트된다"""
+    # Given: 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+    read_time = datetime(2025, 12, 29, 10, 0, 0)
+
+    # When: user1이 읽음 처리하면
+    room.mark_read_by_user("userA", read_time)
+
+    # Then: user1_last_read_at이 업데이트된다
+    assert room.user1_last_read_at == read_time
+    assert room.user2_last_read_at is None
+
+
+def test_mark_read_by_user2_updates_user2_last_read_at():
+    """user2가 읽음 처리하면 user2_last_read_at이 업데이트된다"""
+    # Given: 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+    read_time = datetime(2025, 12, 29, 10, 0, 0)
+
+    # When: user2가 읽음 처리하면
+    room.mark_read_by_user("userB", read_time)
+
+    # Then: user2_last_read_at이 업데이트된다
+    assert room.user1_last_read_at is None
+    assert room.user2_last_read_at == read_time
+
+
+def test_mark_read_by_invalid_user_raises_error():
+    """참여자가 아닌 사용자가 읽음 처리하면 에러가 발생한다"""
+    # Given: 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+
+    # When & Then: 참여자가 아닌 사용자가 읽음 처리하면 ValueError가 발생한다
+    with pytest.raises(ValueError):
+        room.mark_read_by_user("userC")
+
+
+def test_get_last_read_at_returns_user1_read_time():
+    """user1의 마지막 읽은 시간을 반환한다"""
+    # Given: user1이 읽음 처리한 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+    read_time = datetime(2025, 12, 29, 10, 0, 0)
+    room.mark_read_by_user("userA", read_time)
+
+    # When: user1의 마지막 읽은 시간을 조회하면
+    last_read = room.get_last_read_at("userA")
+
+    # Then: 읽은 시간이 반환된다
+    assert last_read == read_time
+
+
+def test_get_last_read_at_returns_none_if_never_read():
+    """한 번도 읽지 않은 경우 None을 반환한다"""
+    # Given: 읽지 않은 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+
+    # When: 마지막 읽은 시간을 조회하면
+    last_read = room.get_last_read_at("userA")
+
+    # Then: None이 반환된다
+    assert last_read is None
+
+
+def test_get_last_read_at_for_invalid_user_raises_error():
+    """참여자가 아닌 사용자의 읽은 시간 조회 시 에러가 발생한다"""
+    # Given: 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+
+    # When & Then: 참여자가 아닌 사용자의 읽은 시간을 조회하면 ValueError가 발생한다
+    with pytest.raises(ValueError):
+        room.get_last_read_at("userC")

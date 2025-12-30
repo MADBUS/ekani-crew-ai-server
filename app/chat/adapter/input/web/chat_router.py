@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.chat.application.use_case.get_chat_history_use_case import GetChatHistoryUseCase
 from app.chat.application.use_case.get_my_chat_rooms_use_case import GetMyChatRoomsUseCase
+from app.chat.application.use_case.mark_chat_room_as_read_use_case import MarkChatRoomAsReadUseCase
 from app.chat.application.port.chat_message_repository_port import ChatMessageRepositoryPort
 from app.chat.application.port.chat_room_repository_port import ChatRoomRepositoryPort
 from app.chat.infrastructure.repository.mysql_chat_message_repository import MySQLChatMessageRepository
@@ -120,3 +121,21 @@ def get_my_chat_rooms(
         room_responses.append(room_response)
 
     return MyChatRoomsResponse(rooms=room_responses)
+
+
+@chat_router.post("/chat/{room_id}/read")
+def mark_room_as_read(
+    room_id: str,
+    user_id: str,
+    room_repository: ChatRoomRepositoryPort = Depends(get_chat_room_repository)
+):
+    """
+    채팅방의 메시지를 읽음 처리한다.
+
+    - room_id: 채팅방 ID
+    - user_id: 읽음 처리할 사용자 ID (query parameter)
+    """
+    use_case = MarkChatRoomAsReadUseCase(room_repository)
+    use_case.execute(room_id, user_id)
+
+    return {"status": "success", "message": "채팅방이 읽음 처리되었습니다"}

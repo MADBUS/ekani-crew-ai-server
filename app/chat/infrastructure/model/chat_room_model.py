@@ -12,6 +12,8 @@ class ChatRoomModel(Base):
     user1_id = Column(String(255), ForeignKey("users.id"), nullable=False, index=True)
     user2_id = Column(String(255), ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime, nullable=False)
+    user1_last_read_at = Column(DateTime, nullable=True)
+    user2_last_read_at = Column(DateTime, nullable=True)
 
     # Relationships
     user1 = relationship("UserModel", foreign_keys=[user1_id])

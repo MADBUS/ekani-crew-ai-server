@@ -18,6 +18,8 @@ class MySQLChatRoomRepository(ChatRoomRepositoryPort):
             user1_id=room.user1_id,
             user2_id=room.user2_id,
             created_at=room.created_at,
+            user1_last_read_at=room.user1_last_read_at,
+            user2_last_read_at=room.user2_last_read_at,
         )
         self._db.merge(room_model)
         self._db.commit()
@@ -36,6 +38,8 @@ class MySQLChatRoomRepository(ChatRoomRepositoryPort):
             user1_id=room_model.user1_id,
             user2_id=room_model.user2_id,
             created_at=room_model.created_at,
+            user1_last_read_at=room_model.user1_last_read_at,
+            user2_last_read_at=room_model.user2_last_read_at,
         )
 
     def find_by_user_id(self, user_id: str) -> list[ChatRoom]:
@@ -50,6 +54,8 @@ class MySQLChatRoomRepository(ChatRoomRepositoryPort):
                 user1_id=model.user1_id,
                 user2_id=model.user2_id,
                 created_at=model.created_at,
+                user1_last_read_at=model.user1_last_read_at,
+                user2_last_read_at=model.user2_last_read_at,
             )
             for model in room_models
         ]
@@ -69,4 +75,6 @@ class MySQLChatRoomRepository(ChatRoomRepositoryPort):
             user1_id=room_model.user1_id,
             user2_id=room_model.user2_id,
             created_at=room_model.created_at,
+            user1_last_read_at=room_model.user1_last_read_at,
+            user2_last_read_at=room_model.user2_last_read_at,
         )
