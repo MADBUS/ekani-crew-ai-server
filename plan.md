@@ -252,7 +252,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### 채팅방 관리 (MVP 필수)
 
-- [ ] `CHAT-5` [Chat] 사용자로서, 채팅방을 나가고 싶다
+- [x] `CHAT-5` [Chat] 사용자로서, 채팅방을 나가고 싶다
   - **Domain 확장**: `ChatRoom.status` (active, left_by_user1, left_by_user2, closed)
   - **UseCase**: `LeaveChatRoomUseCase` - 채팅방 나가기
   - **API**: `POST /chat/{room_id}/leave` → 채팅방 나가기

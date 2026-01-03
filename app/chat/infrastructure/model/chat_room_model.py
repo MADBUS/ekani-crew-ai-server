@@ -14,6 +14,7 @@ class ChatRoomModel(Base):
     created_at = Column(DateTime, nullable=False)
     user1_last_read_at = Column(DateTime, nullable=True)
     user2_last_read_at = Column(DateTime, nullable=True)
+    status = Column(String(50), nullable=False, default="active")
 
     # Relationships
     user1 = relationship("UserModel", foreign_keys=[user1_id])

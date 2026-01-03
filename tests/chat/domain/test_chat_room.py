@@ -148,3 +148,59 @@ def test_get_last_read_at_for_invalid_user_raises_error():
     # When & Then: 참여자가 아닌 사용자의 읽은 시간을 조회하면 ValueError가 발생한다
     with pytest.raises(ValueError):
         room.get_last_read_at("userC")
+
+
+def test_leave_room_by_user1_updates_status_to_left_by_user1():
+    """user1이 채팅방을 나가면 상태가 left_by_user1로 변경된다"""
+    # Given: 활성화된 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+
+    # When: user1이 채팅방을 나가면
+    room.leave_room("userA")
+
+    # Then: 상태가 left_by_user1로 변경된다
+    assert room.status == "left_by_user1"
+
+
+def test_leave_room_by_user2_updates_status_to_left_by_user2():
+    """user2가 채팅방을 나가면 상태가 left_by_user2로 변경된다"""
+    # Given: 활성화된 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+
+    # When: user2가 채팅방을 나가면
+    room.leave_room("userB")
+
+    # Then: 상태가 left_by_user2로 변경된다
+    assert room.status == "left_by_user2"
+
+
+def test_leave_room_by_both_users_updates_status_to_closed():
+    """양쪽 사용자가 모두 나가면 상태가 closed로 변경된다"""
+    # Given: user1이 나간 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+    room.leave_room("userA")
+
+    # When: user2도 채팅방을 나가면
+    room.leave_room("userB")
+
+    # Then: 상태가 closed로 변경된다
+    assert room.status == "closed"
+
+
+def test_leave_room_by_invalid_user_raises_error():
+    """참여자가 아닌 사용자가 나가기를 시도하면 에러가 발생한다"""
+    # Given: 채팅방
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+
+    # When & Then: 참여자가 아닌 사용자가 나가기를 시도하면 ValueError가 발생한다
+    with pytest.raises(ValueError):
+        room.leave_room("userC")
+
+
+def test_new_chat_room_has_active_status():
+    """새로 생성된 채팅방은 active 상태를 가진다"""
+    # Given & When: 새 채팅방을 생성하면
+    room = ChatRoom(id="room-123", user1_id="userA", user2_id="userB")
+
+    # Then: 상태가 active이다
+    assert room.status == "active"

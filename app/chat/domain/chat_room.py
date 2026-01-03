@@ -12,6 +12,7 @@ class ChatRoom:
         created_at: datetime | None = None,
         user1_last_read_at: datetime | None = None,
         user2_last_read_at: datetime | None = None,
+        status: str = "active",
     ):
         self._validate(id, user1_id, user2_id)
         self.id = id
@@ -20,6 +21,7 @@ class ChatRoom:
         self.created_at = created_at or datetime.now()
         self.user1_last_read_at = user1_last_read_at
         self.user2_last_read_at = user2_last_read_at
+        self.status = status
 
     def _validate(self, id: str, user1_id: str, user2_id: str) -> None:
         """ChatRoom 값의 유효성을 검증한다"""
@@ -45,5 +47,20 @@ class ChatRoom:
             return self.user1_last_read_at
         elif user_id == self.user2_id:
             return self.user2_last_read_at
+        else:
+            raise ValueError(f"User {user_id} is not a participant of this chat room")
+
+    def leave_room(self, user_id: str) -> None:
+        """특정 사용자가 채팅방을 나간다"""
+        if user_id == self.user1_id:
+            if self.status == "left_by_user2":
+                self.status = "closed"
+            else:
+                self.status = "left_by_user1"
+        elif user_id == self.user2_id:
+            if self.status == "left_by_user1":
+                self.status = "closed"
+            else:
+                self.status = "left_by_user2"
         else:
             raise ValueError(f"User {user_id} is not a participant of this chat room")
