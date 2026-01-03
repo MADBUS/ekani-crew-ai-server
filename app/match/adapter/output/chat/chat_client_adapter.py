@@ -64,3 +64,17 @@ class ChatClientAdapter(ChatRoomPort):
             # 4. DB 세션 정리
             if db:
                 db.close()
+    async def are_users_partners(self, user1_id: str, user2_id: str) -> bool:
+        db = None
+        try:
+            db = get_db_session()
+            chat_repo = MySQLChatRoomRepository(db)
+            existing_room = chat_repo.find_by_users(user1_id, user2_id)
+            return existing_room is not None
+        except Exception as e:
+            logger.error(f"[Chat Integration] Failed to check partnership for {user1_id}, {user2_id}: {e}")
+            # 에러 발생 시 안전하게 처리 (매칭을 막지 않도록 False 반환)
+            return False
+        finally:
+            if db:
+                db.close()

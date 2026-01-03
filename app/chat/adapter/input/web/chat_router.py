@@ -7,10 +7,15 @@ from sqlalchemy.orm import Session
 from app.chat.application.use_case.get_chat_history_use_case import GetChatHistoryUseCase
 from app.chat.application.use_case.get_my_chat_rooms_use_case import GetMyChatRoomsUseCase
 from app.chat.application.use_case.mark_chat_room_as_read_use_case import MarkChatRoomAsReadUseCase
+from app.chat.application.use_case.leave_chat_room_use_case import LeaveChatRoomUseCase
+from app.chat.application.use_case.report_user_use_case import ReportUserUseCase
 from app.chat.application.port.chat_message_repository_port import ChatMessageRepositoryPort
 from app.chat.application.port.chat_room_repository_port import ChatRoomRepositoryPort
+from app.chat.application.port.report_repository_port import ReportRepositoryPort
 from app.chat.infrastructure.repository.mysql_chat_message_repository import MySQLChatMessageRepository
 from app.chat.infrastructure.repository.mysql_chat_room_repository import MySQLChatRoomRepository
+from app.chat.infrastructure.repository.mysql_report_repository import MySQLReportRepository
+from app.chat.domain.report import ReportReason
 from config.database import get_db
 
 chat_router = APIRouter()
@@ -24,6 +29,11 @@ def get_chat_message_repository(db: Session = Depends(get_db)) -> ChatMessageRep
 def get_chat_room_repository(db: Session = Depends(get_db)) -> ChatRoomRepositoryPort:
     """ChatRoom Repository 의존성 주입"""
     return MySQLChatRoomRepository(db)
+
+
+def get_report_repository(db: Session = Depends(get_db)) -> ReportRepositoryPort:
+    """Report Repository 의존성 주입"""
+    return MySQLReportRepository(db)
 
 
 class ChatMessageResponse(BaseModel):
@@ -139,3 +149,62 @@ def mark_room_as_read(
     use_case.execute(room_id, user_id)
 
     return {"status": "success", "message": "채팅방이 읽음 처리되었습니다"}
+
+
+@chat_router.post("/chat/{room_id}/leave")
+def leave_chat_room(
+    room_id: str,
+    user_id: str,
+    room_repository: ChatRoomRepositoryPort = Depends(get_chat_room_repository)
+):
+    """
+    채팅방을 나간다.
+
+    - room_id: 채팅방 ID
+    - user_id: 나가는 사용자 ID (query parameter)
+    """
+    use_case = LeaveChatRoomUseCase(room_repository)
+    use_case.execute(room_id, user_id)
+
+    return {"status": "success", "message": "채팅방을 나갔습니다"}
+
+
+class ReportMessageRequest(BaseModel):
+    """메시지 신고 요청 DTO"""
+    reporter_id: str
+    reasons: list[str]  # ABUSE, HARASSMENT, SPAM, OTHER
+
+
+class ReportMessageResponse(BaseModel):
+    """메시지 신고 응답 DTO"""
+    report_id: str
+    status: str
+    message: str
+
+
+@chat_router.post("/chat/messages/{message_id}/report", response_model=ReportMessageResponse)
+def report_message(
+    message_id: str,
+    request: ReportMessageRequest,
+    report_repository: ReportRepositoryPort = Depends(get_report_repository),
+    room_repository: ChatRoomRepositoryPort = Depends(get_chat_room_repository),
+    message_repository: ChatMessageRepositoryPort = Depends(get_chat_message_repository)
+):
+    """
+    메시지를 신고한다.
+
+    - message_id: 신고할 메시지 ID
+    - reporter_id: 신고자 ID
+    - reasons: 신고 사유 목록 (ABUSE, HARASSMENT, SPAM, OTHER)
+    """
+    # 문자열을 ReportReason enum으로 변환
+    reason_enums = [ReportReason(r) for r in request.reasons]
+
+    use_case = ReportUserUseCase(report_repository, room_repository, message_repository)
+    report_id = use_case.execute(request.reporter_id, message_id, reason_enums)
+
+    return ReportMessageResponse(
+        report_id=report_id,
+        status="success",
+        message="신고가 접수되었습니다"
+    )

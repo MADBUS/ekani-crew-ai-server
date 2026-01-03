@@ -52,7 +52,15 @@ class RedisMatchStateAdapter(MatchStatePort):
         return self._deserialize(data)
 
     async def set_queued(self, user_id: str, mbti: str) -> None:
-        """Mark user as queued for matching"""
+        """
+        Mark user as queued for matching, unless they are already in a CHATTING state.
+        A user can be in a queue while chatting.
+        """
+        current_state = await self.get_state(user_id)
+        if current_state and current_state.state == MatchState.CHATTING:
+            print(f"[MatchState] User {user_id} is CHATTING, not downgrading state to QUEUED.")
+            return
+
         key = self._get_key(user_id)
         state = UserMatchState(
             user_id=user_id,

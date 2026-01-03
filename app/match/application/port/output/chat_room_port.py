@@ -20,3 +20,10 @@ class ChatRoomPort(ABC):
             }
         """
         pass
+
+    @abstractmethod
+    async def are_users_partners(self, user1_id: str, user2_id: str) -> bool:
+        """
+        두 사용자가 이미 활성화된 채팅방에 함께 있는지 확인합니다.
+        """
+        pass

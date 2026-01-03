@@ -1,150 +1,82 @@
+
 import pytest
-import json
 from datetime import datetime
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from app.main import app
-from config.database import get_db_session, Base, engine
+from app.user.infrastructure.model.user_model import UserModel
 from app.chat.infrastructure.model.chat_message_model import ChatMessageModel
 from app.chat.infrastructure.model.chat_room_model import ChatRoomModel
 
-# 테스트용 테이블 생성
-Base.metadata.create_all(bind=engine)
+def _create_test_users(db_session, *user_ids):
+    """Helper to create user models for tests."""
+    for user_id in user_ids:
+        user = db_session.query(UserModel).filter_by(id=user_id).first()
+        if not user:
+            db_session.add(UserModel(id=user_id, email=f"{user_id}@test.com"))
+    db_session.commit()
 
-client = TestClient(app)
+def _create_test_room(db_session, room_id: str, user1_id: str, user2_id: str):
+    """Helper to create a chat room with corresponding users."""
+    _create_test_users(db_session, user1_id, user2_id)
+    room = ChatRoomModel(
+        id=room_id,
+        user1_id=user1_id,
+        user2_id=user2_id,
+        created_at=datetime.now()
+    )
+    db_session.add(room)
+    db_session.commit()
 
+def test_websocket_connection_and_disconnection(client: TestClient, db_session):
+    """WebSocket connection and disconnection test"""
+    room_id = "test_room_connect"
+    user1_id = "user1_conn"
+    user2_id = "user2_conn"
+    _create_test_room(db_session, room_id, user1_id, user2_id)
 
-class TestChatWebSocketRouter:
-    def setup_method(self):
-        """각 테스트 전에 실행되는 셋업 메서드"""
-        db = get_db_session()
-        # 테스트 데이터 정리
-        db.query(ChatMessageModel).delete()
-        db.query(ChatRoomModel).delete()
-        db.commit()
-        db.close()
-
-    def teardown_method(self):
-        """각 테스트 후에 실행되는 정리 메서드"""
-        db = get_db_session()
-        # 테스트 데이터 정리
-        db.query(ChatMessageModel).delete()
-        db.query(ChatRoomModel).delete()
-        db.commit()
-        db.close()
-
-    def _create_test_room(self, room_id: str, user1_id: str, user2_id: str):
-        """테스트용 채팅방 생성 헬퍼 메서드"""
-        db = get_db_session()
-        room = ChatRoomModel(
-            id=room_id,
-            user1_id=user1_id,
-            user2_id=user2_id,
-            created_at=datetime.now()
-        )
-        db.add(room)
-        db.commit()
-        db.close()
-
-    def test_websocket_connection_and_disconnection(self):
-        """WebSocket 연결 및 해제 테스트"""
-        room_id = "test_room"
-        user1_id = "user1"
-        user2_id = "user2"
-
-        # 채팅방 먼저 생성
-        self._create_test_room(room_id, user1_id, user2_id)
-
-        try:
-            with client.websocket_connect(f"/ws/chat/{room_id}") as websocket:
-                # 연결이 성공적으로 이루어져야 함
-                assert websocket
-        except WebSocketDisconnect as e:
-            pytest.fail(f"WebSocket connection failed unexpectedly: {e}")
-
-    def test_send_and_receive_message(self):
-        """메시지 송수신 테스트"""
-        room_id = "test_room"
-        user1_id = "user1"
-        user2_id = "user2"
-
-        # 채팅방 먼저 생성
-        self._create_test_room(room_id, user1_id, user2_id)
-
+    try:
         with client.websocket_connect(f"/ws/chat/{room_id}") as websocket:
-            message_payload = {
-                "sender_id": user1_id,
-                "content": "Hello, WebSocket!"
-            }
-            websocket.send_json(message_payload)
-            received = websocket.receive_json()
-            assert received["content"] == "Hello, WebSocket!"
-            assert received["sender_id"] == user1_id
+            assert websocket
+    except WebSocketDisconnect as e:
+        pytest.fail(f"WebSocket connection failed unexpectedly: {e}")
 
-    @pytest.mark.skip(reason="TestClient WebSocket timing issue - works in production")
-    def test_broadcast_message_to_room(self):
-        """채팅방 메시지 브로드캐스팅 테스트"""
-        room_id = "broadcast_room"
-        user1_id = "user1"
-        user2_id = "user2"
+def test_send_and_receive_message(client: TestClient, db_session):
+    """Message sending and receiving test"""
+    room_id = "test_room_send"
+    user1_id = "user1_send"
+    user2_id = "user2_send"
+    _create_test_room(db_session, room_id, user1_id, user2_id)
 
-        # 채팅방 먼저 생성
-        self._create_test_room(room_id, user1_id, user2_id)
-
+    with client.websocket_connect(f"/ws/chat/{room_id}") as websocket:
         message_payload = {
             "sender_id": user1_id,
-            "content": "This is a broadcast message."
+            "content": "Hello, WebSocket!"
         }
+        websocket.send_json(message_payload)
+        received = websocket.receive_json()
+        assert received["content"] == "Hello, WebSocket!"
+        assert received["sender_id"] == user1_id
 
-        with client.websocket_connect(f"/ws/chat/{room_id}") as websocket1:
-            with client.websocket_connect(f"/ws/chat/{room_id}") as websocket2:
-                # Client 1 sends a message
-                websocket1.send_json(message_payload)
+def test_message_saved_to_database(client: TestClient, db_session):
+    """Verify that messages sent via WebSocket are saved to the DB."""
+    room_id = "test_room_db"
+    sender_id = "user123_db"
+    user2_id = "user456_db"
+    content = "Hello, this should be saved to DB!"
+    _create_test_room(db_session, room_id, sender_id, user2_id)
 
-                # Client 2 should receive the message
-                received_message_2 = websocket2.receive_json()
-                assert received_message_2["content"] == "This is a broadcast message."
-                assert received_message_2["sender_id"] == user1_id
+    with client.websocket_connect(f"/ws/chat/{room_id}") as websocket:
+        message_payload = {
+            "sender_id": sender_id,
+            "content": content
+        }
+        websocket.send_json(message_payload)
+        # We need to receive the message for the send operation to complete
+        websocket.receive_json()
 
-                # Client 1 should also receive the message (or not, depending on requirements)
-                # For now, we'll assume it's broadcast to all, including the sender.
-                received_message_1 = websocket1.receive_json()
-                assert received_message_1["content"] == "This is a broadcast message."
-                assert received_message_1["sender_id"] == user1_id
-
-    def test_message_saved_to_database(self):
-        """WebSocket으로 전송한 메시지가 DB에 저장되는지 검증"""
-        room_id = "test_room_db"
-        sender_id = "user123"
-        user2_id = "user456"
-        content = "Hello, this should be saved to DB!"
-
-        # 채팅방 먼저 생성
-        self._create_test_room(room_id, sender_id, user2_id)
-
-        # WebSocket으로 메시지 전송 (JSON 형식)
-        with client.websocket_connect(f"/ws/chat/{room_id}") as websocket:
-            message_payload = {
-                "sender_id": sender_id,
-                "content": content
-            }
-            websocket.send_json(message_payload)
-
-            # 메시지 수신 확인
-            received = websocket.receive_json()
-
-        # DB에 메시지가 저장되었는지 확인
-        db = get_db_session()
-        try:
-            saved_messages = db.query(ChatMessageModel).filter(
-                ChatMessageModel.room_id == room_id,
-                ChatMessageModel.sender_id == sender_id,
-                ChatMessageModel.content == content
-            ).all()
-
-            assert len(saved_messages) == 1
-            assert saved_messages[0].sender_id == sender_id
-            assert saved_messages[0].content == content
-        finally:
-            db.close()
+    # The dependency override on the client ensures this query uses the same session
+    saved_message = db_session.query(ChatMessageModel).filter_by(room_id=room_id, sender_id=sender_id, content=content).one_or_none()
+    assert saved_message is not None
+    assert saved_message.sender_id == sender_id
+    assert saved_message.content == content

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.mbti_test.domain.mbti_message import MBTIMessage
 
@@ -17,8 +17,7 @@ class AnswerQuestionResponse(BaseModel):
     analysis_result: dict | None = None
     partial_analysis_result: dict | None = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class AnswerQuestionUseCase(ABC):

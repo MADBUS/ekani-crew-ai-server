@@ -1,31 +1,51 @@
 import pytest
 import uuid
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from app.shared.vo.mbti import MBTI
 from app.match.domain.match_ticket import MatchTicket
 from app.match.application.usecase.match_usecase import MatchUseCase
 from tests.match.fixtures.fake_match_queue_adapter import FakeMatchQueueAdapter
 
-
 @pytest.mark.asyncio
-async def test_format_match_result_payload():
+
+async def test_format_match_result_payload(monkeypatch):
+
     """
     [MATCH-3] 매칭 성공 시, Chat 도메인으로 보내는 데이터 규격(JSON)이
     Success Criteria에 맞게 생성되는지 검증
     """
     # Given
-    fake_queue = FakeMatchQueueAdapter()
-
-    # ChatPort를 Mocking하여 전달된 데이터를 가로챕니다.
     mock_chat_port = AsyncMock()
     mock_chat_port.create_chat_room.return_value = True
+    mock_chat_port.are_users_partners.return_value = False  # 항상 새로운 파트너라고 가정
 
-    usecase = MatchUseCase(match_queue_port=fake_queue, chat_room_port=mock_chat_port)
+    # MatchUseCase의 의존성을 모킹합니다.
+    mock_queue_port = AsyncMock()
+    mock_state_port = AsyncMock()
+    mock_state_port.is_available_for_match.return_value = True
+    mock_notification_port = AsyncMock()
 
-    # 파트너 미리 등록 (INFP <-> ENFJ 천생연분)
+    # MatchService를 모킹합니다.
+    mock_match_service = MagicMock()
+    mock_match_service.find_partner = AsyncMock()
+    monkeypatch.setattr(
+        "app.match.application.usecase.match_usecase.MatchService",
+        lambda *args, **kwargs: mock_match_service
+    )
+
+    usecase = MatchUseCase(
+        match_queue_port=mock_queue_port,
+        chat_room_port=mock_chat_port,
+        match_state_port=mock_state_port,
+        match_notification_port=mock_notification_port,
+    )
+
+    usecase.match_service = mock_match_service
+
+    # find_partner가 즉시 유효한 파트너를 반환하도록 설정
     partner = MatchTicket("partner_enfj", MBTI("ENFJ"))
-    await fake_queue.enqueue(partner)
+    usecase.match_service.find_partner.return_value = partner
 
     # When: 매칭 요청
     my_id = "me_infp"

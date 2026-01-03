@@ -59,25 +59,37 @@ class MatchUseCase:
         # 도메인 객체 생성
         my_ticket = MatchTicket(user_id=user_id, mbti=mbti)
 
-        # Service에 level 전달
-        partner_ticket = await self.match_service.find_partner(my_ticket, level)
+        # 파트너 탐색 루프
+        partner_ticket = None
+        while True:
+            # 대기열에서 다음 후보를 찾음
+            candidate_ticket = await self.match_service.find_partner(my_ticket, level)
+
+            # 더 이상 찾을 파트너가 없으면 루프 종료
+            if not candidate_ticket:
+                break
+
+            # 자기 자신과 매칭될 경우 스킵
+            if candidate_ticket.user_id == my_ticket.user_id:
+                continue
+
+            # 파트너가 매칭 가능한 상태인지 확인 (MATCHED 상태가 아니어야 함)
+            is_available = True
+            if self.match_state:
+                is_available = await self.match_state.is_available_for_match(candidate_ticket.user_id)
+
+            if not is_available:
+                continue  # 다음 후보를 찾아서 계속
+
+            # 이미 채팅중인 상대인지 확인
+            if await self.chat_room_port.are_users_partners(my_ticket.user_id, candidate_ticket.user_id):
+                continue
+
+            # 모든 검증을 통과했으므로, 이 후보를 파트너로 확정
+            partner_ticket = candidate_ticket
+            break
 
         if partner_ticket:
-            # Check if partner is still available (not matched/chatting with someone else)
-            if self.match_state:
-                if not await self.match_state.is_available_for_match(partner_ticket.user_id):
-                    # Partner is no longer available, try to find another partner
-                    # For now, just add user to queue
-                    await self.match_queue.enqueue(my_ticket)
-                    await self.match_state.set_queued(user_id, mbti.value)
-                    wait_count = await self.get_waiting_count(mbti)
-                    return {
-                        "status": "waiting",
-                        "message": "매칭 대기열에 등록되었습니다.",
-                        "my_mbti": mbti.value,
-                        "wait_count": wait_count
-                    }
-
             # 2. [MATCH-3] 매칭 성공 시 채팅방 데이터 생성
             room_id = str(uuid.uuid4())
             timestamp = datetime.now().isoformat()

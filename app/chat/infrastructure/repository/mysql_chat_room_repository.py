@@ -45,9 +45,15 @@ class MySQLChatRoomRepository(ChatRoomRepositoryPort):
         )
 
     def find_by_user_id(self, user_id: str) -> list[ChatRoom]:
-        """user_id로 해당 사용자가 참여한 채팅방 목록을 조회한다"""
+        """user_id로 해당 사용자가 참여한 채팅방 목록을 조회한다 (나간 채팅방 제외)"""
         room_models = self._db.query(ChatRoomModel).filter(
-            (ChatRoomModel.user1_id == user_id) | (ChatRoomModel.user2_id == user_id)
+            (
+                (ChatRoomModel.user1_id == user_id) &
+                (~ChatRoomModel.status.in_(["left_by_user1", "closed"]))
+            ) | (
+                (ChatRoomModel.user2_id == user_id) &
+                (~ChatRoomModel.status.in_(["left_by_user2", "closed"]))
+            )
         ).order_by(ChatRoomModel.created_at.desc()).all()
 
         return [

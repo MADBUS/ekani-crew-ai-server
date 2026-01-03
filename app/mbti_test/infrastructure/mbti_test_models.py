@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, String, Column, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
+from sqlalchemy.sql import func
 
 # 프로젝트 공용 Base를 사용 (요구사항)
 from config.database import Base
@@ -46,3 +47,15 @@ class MBTITestSessionModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=_utcnow, onupdate=_utcnow
     )
+
+
+class SurpriseAnswerModel(Base):
+    __tablename__ = "surprise_answers"
+
+    id = Column(String(36), primary_key=True)          # UUID string
+    user_id = Column(String(36), nullable=False, index=True)
+    question_id = Column(String(64), nullable=False)
+    answer_text = Column(String(2000), nullable=False)
+    dimension = Column(String(2), nullable=False)      # EI/SN/TF/JP
+    score_delta = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())

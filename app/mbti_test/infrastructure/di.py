@@ -10,10 +10,10 @@ from typing import Generator
 
 from config.database import SessionLocal
 
-from app.mbti_test.adapter.output.mysql_mbti_test_session_repository import (
+from app.mbti_test.infrastructure.repository.mysql_mbti_test_session_repository import (
     MySQLMBTITestSessionRepository,
 )
-from app.mbti_test.adapter.output.mysql_user_repository import MySQLUserRepository
+from app.user.infrastructure.repository.mysql_user_repository import MySQLUserRepository
 from app.mbti_test.application.use_case.calculate_final_mbti_usecase import (
     CalculateFinalMBTIUseCase,
 )
