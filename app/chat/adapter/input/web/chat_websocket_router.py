@@ -73,7 +73,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, db: Session = D
 
             message_repository = MySQLChatMessageRepository(db)
             save_message_use_case = SaveChatMessageUseCase(message_repository)
-            save_message_use_case.execute(
+            saved_message = save_message_use_case.execute(
                 message_id=message_id,
                 room_id=room_id,
                 sender_id=sender_id,
@@ -81,10 +81,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, db: Session = D
             )
 
             broadcast_message = {
-                "message_id": message_id,
-                "room_id": room_id,
-                "sender_id": sender_id,
-                "content": content
+                "id": saved_message.id,
+                "room_id": saved_message.room_id,
+                "sender_id": saved_message.sender_id,
+                "content": saved_message.content,
+                "created_at": saved_message.created_at.isoformat()
             }
             
             await manager.broadcast(json.dumps(broadcast_message), room_id)

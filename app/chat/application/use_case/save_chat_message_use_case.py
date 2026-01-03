@@ -14,8 +14,8 @@ class SaveChatMessageUseCase:
         room_id: str,
         sender_id: str,
         content: str
-    ) -> str:
-        """채팅 메시지를 저장하고 message_id를 반환한다"""
+    ) -> ChatMessage:
+        """채팅 메시지를 저장하고 ChatMessage 객체를 반환한다"""
         # 새로운 메시지 생성 (ChatMessage가 유효성 검증)
         message = ChatMessage(
             id=message_id,
@@ -27,4 +27,4 @@ class SaveChatMessageUseCase:
         # 저장
         self._repository.save(message)
 
-        return message_id
+        return message
