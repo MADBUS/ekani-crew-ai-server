@@ -258,11 +258,11 @@ Person C,D ─→ 버그 픽스, UX 개선
   - **API**: `POST /chat/{room_id}/leave` → 채팅방 나가기
   - **✅ 인수 조건**: 나간 유저는 목록에서 안 보임, 상대방에게 "상대방이 나갔습니다" 표시
 
-- [ ] `CHAT-6` [Chat] 사용자로서, 불쾌한 상대를 신고하고 싶다
-  - **Domain**: `Report` (id, reporter_id, reported_user_id, room_id, reason, created_at)
-  - **UseCase**: `ReportUserUseCase` - 유저 신고
-  - **API**: `POST /chat/{room_id}/report` → 신고 접수
-  - **✅ 인수 조건**: 신고 사유 선택, 관리자 검토용 DB 저장
+- [x] `CHAT-6` [Chat] 사용자로서, 불쾌한 상대를 신고하고 싶다
+  - **Domain**: `Report` (id, reporter_id, reported_user_id, room_id, message_id, reasons, created_at)
+  - **UseCase**: `ReportUserUseCase` - 메시지 신고
+  - **API**: `POST /chat/messages/{message_id}/report` → 신고 접수
+  - **✅ 인수 조건**: 여러 신고 사유 선택 가능, 중복 신고 방지, 관리자 검토용 DB 저장
 
 - [ ] `CHAT-7` [Chat] 사용자로서, 특정 유저를 차단하고 싶다
   - **Domain**: `Block` (id, blocker_id, blocked_user_id, created_at)
