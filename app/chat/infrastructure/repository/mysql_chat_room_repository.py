@@ -70,10 +70,13 @@ class MySQLChatRoomRepository(ChatRoomRepositoryPort):
         ]
 
     def find_by_users(self, user1_id: str, user2_id: str) -> ChatRoom | None:
-        """두 사용자 간의 채팅방을 조회한다 (순서 무관)"""
+        """두 사용자 간의 활성 채팅방을 조회한다 (순서 무관, active 상태만)"""
         room_model = self._db.query(ChatRoomModel).filter(
-            ((ChatRoomModel.user1_id == user1_id) & (ChatRoomModel.user2_id == user2_id)) |
-            ((ChatRoomModel.user1_id == user2_id) & (ChatRoomModel.user2_id == user1_id))
+            (
+                ((ChatRoomModel.user1_id == user1_id) & (ChatRoomModel.user2_id == user2_id)) |
+                ((ChatRoomModel.user1_id == user2_id) & (ChatRoomModel.user2_id == user1_id))
+            ) &
+            (ChatRoomModel.status == "active")
         ).first()
 
         if room_model is None:
