@@ -98,7 +98,7 @@ class OpenAIMessageConverter(MessageConverterPort):
         )
 
         # 2. 관계 기반 전략 (Gap Analysis) - 상대적 차이 극복
-        strategy = self._get_communication_strategy(sender_mbti, receiver_mbti)
+        strategy = self._get_communication_strategy(receiver_mbti)
 
         # 3. 톤 가이드라인
         tone_guidelines = self._get_tone_guidelines(tone)
@@ -136,27 +136,30 @@ class OpenAIMessageConverter(MessageConverterPort):
 }}
 """
 
-    def _get_communication_strategy(self, sender: MBTI, receiver: MBTI) -> str:
+    def _get_communication_strategy(self, receiver: MBTI) -> str:
         """모든 상황에 적용 가능한 범용 전략 생성 (Sender vs Receiver 차이 분석)"""
         strategies = []
 
         # 1. 정보 전달 방식 (S vs N)
-        if sender.information == 'S' and receiver.information == 'N':
-            strategies.append("👉 **S->N 전략**: 너무 자잘한 사실 나열은 줄이고, **'그래서 이게 무슨 의미인지(Big Picture)'**나 **'앞으로의 방향성'**을 먼저 언급해줘.")
-        elif sender.information == 'N' and receiver.information == 'S':
-            strategies.append("👉 **N->S 전략**: 추상적인 표현이나 비유는 빼고, **'지금 당장 무엇을 해야 하는지'**, **'눈에 보이는 구체적 예시'**로 바꿔서 말해줘.")
+        if receiver.information == 'N':
+            strategies.append("👉 **수신자가 N형 (직관)**: 너무 자잘한 사실 나열은 줄이고, **'그래서 이게 무슨 의미인지(Big Picture)'**나 **'앞으로의 방향성'**을 먼저 언급해줘.")
+        elif receiver.information == 'S':
+            strategies.append("👉 **수신자가 S형 (감각)**: 추상적인 표현이나 비유는 빼고, **'지금 당장 무엇을 해야 하는지'**, **'눈에 보이는 구체적 예시'**로 바꿔서 말해줘.")
 
         # 2. 의사결정 및 피드백 방식 (T vs F)
-        if sender.decision == 'T' and receiver.decision == 'F':
-            strategies.append("👉 **T->F 전략**: 지적이나 해결책부터 던지지 마. **'공감하는 멘트'**나 **'상대방의 노력에 대한 인정'**을 먼저 표현한 뒤 본론을 꺼내.")
-        elif sender.decision == 'F' and receiver.decision == 'T':
-            strategies.append("👉 **F->T 전략**: 감정적인 서술은 줄이고, **'원인과 결과(In-Ga)'**, **'핵심 용건'**, **'객관적 근거'** 위주로 드라이하게 정리해.")
+        if receiver.decision == 'F':
+            strategies.append("👉 **수신자가 F형 (감정)**: 지적이나 해결책부터 던지지 마. **'공감하는 멘트'**나 **'상대방의 노력에 대한 인정'**을 먼저 표현한 뒤 본론을 꺼내.")
+        elif receiver.decision == 'T':
+            strategies.append("👉 **수신자가 T형 (사고)**: 감정적인 서술은 줄이고, **'원인과 결과(In-Ga)'**, **'핵심 용건'**, **'객관적 근거'** 위주로 드라이하게 정리해.")
 
-        # 3. 생활 양식 및 업무 방식 (J vs P)
-        if sender.lifestyle == 'J' and receiver.lifestyle == 'P':
-            strategies.append("👉 **J->P 전략**: 강압적인 명령조('~해', '~까지 완료해')를 피하고, **'~하는 게 어때?' 같은 제안형**이나 **'유연한 선택지'**를 주는 방식으로 바꿔.")
-        elif sender.lifestyle == 'P' and receiver.lifestyle == 'J':
-            strategies.append("👉 **P->J 전략**: 모호한 표현('글쎄', '대충')을 없애고, **'확실한 결론'**과 **'명확한 계획/단계'**를 보여줘서 불확실성을 제거해.")
+        # 3. 생활 양식 및 업무 방식
+        if receiver.lifestyle == 'P':
+            strategies.append("👉 **수신자가 P형 (인식)**: 분 단위 계획표는 P에게 '읽기 싫은 텍스트'일 뿐이야. **중간 과정(기상, 씻기, 이동 등)은 싹 다 지워버려.**")
+            strategies.append("대신 다음 두 가지 중 하나로 변환해:")
+            strategies.append("1. **선택권 부여**: 'A, B, C 중에 어디가 젤 땡겨? 하나만 골라 대충 가자.'")
+            strategies.append("2. **단순 통보**: '복잡한 건 내가 챙길 테니까, 넌 12시까지 OO으로 몸만 와.'")
+        elif receiver.lifestyle == 'J':
+            strategies.append("👉 **수신자가 J형 (판단)**: 모호한 표현('글쎄', '대충')을 없애고, **'확실한 결론'**과 **'명확한 계획/단계'**를 보여줘서 불확실성을 제거해.")
 
         # 4. 동일 성향일 때
         if not strategies:
